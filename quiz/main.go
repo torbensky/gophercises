@@ -5,11 +5,15 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
-var quizfile = flag.String("csv", "problems.csv", `a csv file in the format of 'question,answer' (default "problems.csv")`)
+var quizFile = flag.String("csv", "problems.csv", `a csv file in the format of 'question,answer' (default "problems.csv")`)
+var timeLimit = flag.Uint("limit", 30, "the quiz time limit, in seconds (default '30')")
+var shuffle = flag.Bool("shuffle", false, "shuffle the problems randomly (default 'false')")
 
 type problem struct {
 	question string
@@ -21,11 +25,10 @@ func init() {
 }
 
 func main() {
-	fmt.Println("It's time for a quiz!")
-	f, err := os.Open(*quizfile)
+	f, err := os.Open(*quizFile)
 	defer f.Close()
 	if err != nil {
-		fmt.Printf("Unable to open quiz file: %s\n", *quizfile)
+		fmt.Printf("Unable to open quiz file: %s\n", *quizFile)
 		os.Exit(1)
 	}
 
@@ -46,13 +49,21 @@ func main() {
 	// Parse the problem set
 	problems := getProblems(lines)
 
-	// Ask question for each problem
 	asker := bufio.NewReader(os.Stdin)
-	for i, p := range problems {
-		fmt.Printf("Question %d: %s ", i+1, p.question)
-		response, _ := asker.ReadString('\n')
-		results[p] = strings.TrimSpace(response)
-	}
+	fmt.Println("It's time for a quiz! Hit 'enter' to start.")
+	asker.ReadString('\n') // don't care about result
+
+	// Ask question for each problem
+	go func() {
+		for i, p := range problems {
+			fmt.Printf("Question %d: %s ", i+1, p.question)
+			response, _ := asker.ReadString('\n')
+			results[p] = strings.TrimSpace(response)
+		}
+	}()
+
+	quizTimer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
+	<-quizTimer.C
 
 	quizDone(results)
 }
@@ -69,6 +80,14 @@ func getProblems(lines [][]string) []problem {
 		result[i] = problem{
 			question: line[0],
 			answer:   strings.TrimSpace(line[1]),
+		}
+	}
+
+	// Shuffle the problems if the flag is set
+	if *shuffle {
+		for i := range result {
+			j := rand.Intn(i + 1)
+			result[i], result[j] = result[j], result[i]
 		}
 	}
 
