@@ -5,16 +5,15 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 )
 
 var quizfile = flag.String("csv", "problems.csv", `a csv file in the format of 'question,answer' (default "problems.csv")`)
 
-type qresult struct {
+type problem struct {
+	question string
 	answer   string
-	response string
 }
 
 func init() {
@@ -26,55 +25,63 @@ func main() {
 	f, err := os.Open(*quizfile)
 	defer f.Close()
 	if err != nil {
-		panic(err)
+		fmt.Printf("Unable to open quiz file: %s\n", *quizfile)
+		os.Exit(1)
 	}
 
 	// Stores quiz results
-	results := map[string]qresult{}
+	results := map[problem]string{}
 
-	// Read all questions inthe quiz
+	// Read all questions in the quiz
 	r := csv.NewReader(f)
 	r.Comment = '#'
-	stdr := bufio.NewReader(os.Stdin)
-	var question, answer string
-	for {
-		// Try to read the next question
-		row, err := r.Read()
+	lines, err := r.ReadAll()
 
-		// Quiz done
-		if err == io.EOF {
-			quizDone(results)
-			return
-		}
-
-		// Bad CSV file
-		if err != nil {
-			panic(err)
-		}
-
-		// Validate row
-		if len(row) < 2 {
-			fmt.Println("Invalid quiz format. Please ensure all rows have 2 columns. First column is question, second is answer.")
-			return
-		}
-
-		// Parse question, answer and ask. Wait for answer on stdin.
-		question = row[0]
-		answer = row[1]
-		fmt.Printf("%s ", question)
-		response, _ := stdr.ReadString('\n')
-		results[question] = qresult{strings.TrimSpace(answer), strings.TrimSpace(response)}
+	// Bad CSV file
+	if err != nil {
+		fmt.Println("Unable to parse CSV file")
+		os.Exit(1)
 	}
 
+	// Parse the problem set
+	problems := getProblems(lines)
+
+	// Ask question for each problem
+	asker := bufio.NewReader(os.Stdin)
+	for i, p := range problems {
+		fmt.Printf("Question %d: %s ", i+1, p.question)
+		response, _ := asker.ReadString('\n')
+		results[p] = strings.TrimSpace(response)
+	}
+
+	quizDone(results)
 }
 
-func quizDone(results map[string]qresult) {
-	total, correct := 0, 0
-	for _, v := range results {
-		total++
-		if v.answer == v.response {
+// getProblems gets a list of problems from CSV lines
+func getProblems(lines [][]string) []problem {
+	result := make([]problem, len(lines))
+	for i, line := range lines {
+		// Validate row
+		if len(line) < 2 {
+			fmt.Printf("line[%d] has an invalid problem [%s]. Please ensure all rows have at least 2 columns.\n", i, line)
+			continue
+		}
+		result[i] = problem{
+			question: line[0],
+			answer:   strings.TrimSpace(line[1]),
+		}
+	}
+
+	return result
+}
+
+// quizDone outputs the results of the quiz to the user
+func quizDone(results map[problem]string) {
+	correct := 0
+	for p, a := range results {
+		if p.answer == a {
 			correct++
 		}
 	}
-	fmt.Printf("You scored %d out of %d.\n", correct, total)
+	fmt.Printf("You scored %d out of %d.\n", correct, len(results))
 }
