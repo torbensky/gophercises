@@ -32,9 +32,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Stores quiz results
-	results := map[problem]string{}
-
 	// Read all questions in the quiz
 	r := csv.NewReader(f)
 	r.Comment = '#'
@@ -48,24 +45,40 @@ func main() {
 
 	// Parse the problem set
 	problems := getProblems(lines)
+	// Stores quiz results
+	results := make(map[problem]string, len(problems))
 
 	asker := bufio.NewReader(os.Stdin)
 	fmt.Println("It's time for a quiz! Hit 'enter' to start.")
 	asker.ReadString('\n') // don't care about result
 
-	// Ask question for each problem
-	go func() {
-		for i, p := range problems {
-			fmt.Printf("Question %d: %s ", i+1, p.question)
-			response, _ := asker.ReadString('\n')
-			results[p] = strings.TrimSpace(response)
-		}
-	}()
-
+	responsesCh := make(chan string)
 	quizTimer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
-	<-quizTimer.C
 
-	quizDone(results)
+	// Ask question for each problem
+	for i, p := range problems {
+		go func() {
+			response := askQuestion(asker, i, p)
+			responsesCh <- response
+		}()
+		select {
+		case <-quizTimer.C:
+			fmt.Println()
+			quizDone(results, len(problems))
+			return
+		case response := <-responsesCh:
+			results[p] = response
+		}
+
+	}
+
+	quizDone(results, len(problems))
+}
+
+func askQuestion(r *bufio.Reader, num int, p problem) string {
+	fmt.Printf("Question %d: %s ", num+1, p.question)
+	response, _ := r.ReadString('\n')
+	return strings.TrimSpace(response)
 }
 
 // getProblems gets a list of problems from CSV lines
@@ -95,12 +108,12 @@ func getProblems(lines [][]string) []problem {
 }
 
 // quizDone outputs the results of the quiz to the user
-func quizDone(results map[problem]string) {
+func quizDone(results map[problem]string, numProblems int) {
 	correct := 0
 	for p, a := range results {
 		if p.answer == a {
 			correct++
 		}
 	}
-	fmt.Printf("You scored %d out of %d.\n", correct, len(results))
+	fmt.Printf("You scored %d out of %d.\n", correct, numProblems)
 }
