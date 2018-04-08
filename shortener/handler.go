@@ -57,8 +57,8 @@ func buildMap(mappings []shortmap) map[string]string {
 	return r
 }
 
-func parseYAML(yml []byte) (shortmaps, error) {
-	var mappings shortmaps
+func parseYAML(yml []byte) ([]shortmap, error) {
+	var mappings []shortmap
 	err := yaml.Unmarshal(yml, &mappings)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,6 @@ func parseYAML(yml []byte) (shortmaps, error) {
 	return mappings, nil
 }
 
-type shortmaps []shortmap
 type shortmap struct {
 	Path string `yaml:"path"`
 	URL  string `yaml:"url"`
