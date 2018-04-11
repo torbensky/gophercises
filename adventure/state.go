@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 )
 
-type storystate struct {
-	currentArc string
-	arcs       map[string]StoryArc
+type StoryState struct {
+	CurrentArc string
+	Arcs       map[string]StoryArc
 }
 
 // StoryArc is just that - the arc of a story. Basically, a chapter.
@@ -23,7 +23,7 @@ type StoryArc struct {
 
 const initialStoryArc = "intro"
 
-func loadStateJSON(path string) (*storystate, error) {
+func loadStateJSON(path string) (*StoryState, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -35,15 +35,15 @@ func loadStateJSON(path string) (*storystate, error) {
 		return nil, err
 	}
 
-	return &storystate{
-		currentArc: initialStoryArc,
-		arcs:       arcs,
+	return &StoryState{
+		CurrentArc: initialStoryArc,
+		Arcs:       arcs,
 	}, nil
 }
 
-func (s *storystate) setArc(arc string) error {
+func (s *StoryState) setArc(arc string) error {
 	arcValid := false
-	for name := range s.arcs {
+	for name := range s.Arcs {
 		if name == arc {
 			arcValid = true
 			break
@@ -54,11 +54,11 @@ func (s *storystate) setArc(arc string) error {
 		return errors.New("invalid story arc: '" + arc + "'")
 	}
 
-	s.currentArc = arc
+	s.CurrentArc = arc
 	return nil
 }
 
-func (s *storystate) followArc(arc string) error {
+func (s *StoryState) followArc(arc string) error {
 	arcValid := false
 	for _, s := range s.getCurrentArc().Options {
 		if s.Arc == arc {
@@ -70,11 +70,11 @@ func (s *storystate) followArc(arc string) error {
 		return errors.New("invalid story arc: '" + arc + "'")
 	}
 
-	s.currentArc = arc
+	s.CurrentArc = arc
 
 	return nil
 }
 
-func (s *storystate) getCurrentArc() StoryArc {
-	return s.arcs[s.currentArc]
+func (s *StoryState) getCurrentArc() StoryArc {
+	return s.Arcs[s.CurrentArc]
 }

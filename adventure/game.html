@@ -5,6 +5,16 @@
     <title>Choose Your Own Adventure!</title>
   </head>
   <body>
-	
+    <h1>{{.Title}}</h1>
+    <p>
+      {{range .Story}}
+        {{.}}
+      {{end}}
+    </p>
+    <ul>
+    {{range .Options}}
+    <li><a href="/{{$.CurrentArc}}/goto/{{.Arc}}">{{.Text}}</a></li>
+    {{end}}
+    </ul>
   </body>
 </html>

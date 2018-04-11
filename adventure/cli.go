@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func runCLIGame(s *storystate) {
+func runCLIGame(s *StoryState) {
 	for {
 		tell(*s)
 		err := listOptions(*s)
@@ -44,7 +44,7 @@ func runCLIGame(s *storystate) {
 }
 
 // Tells the story at its current state (arc)
-func tell(s storystate) {
+func tell(s StoryState) {
 	arc := s.getCurrentArc()
 	fmt.Printf("\n\n%s\n", arc.Title)
 	fmt.Println("==================================================")
@@ -63,7 +63,7 @@ func prompt(msg string) string {
 
 // Lists the available options to the user
 // returns an error if no options available (story over)
-func listOptions(s storystate) error {
+func listOptions(s StoryState) error {
 	if len(s.getCurrentArc().Options) == 0 {
 		return errors.New("reached end of story")
 	}
