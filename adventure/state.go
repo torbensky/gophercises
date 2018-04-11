@@ -23,14 +23,17 @@ type StoryArc struct {
 
 const initialStoryArc = "intro"
 
-func loadStateJSON(path string) (*StoryState, error) {
+func loadStateJSONFromFile(path string) (*StoryState, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
+	return loadStateJSON(b)
+}
 
+func loadStateJSON(b []byte) (*StoryState, error) {
 	var arcs map[string]StoryArc
-	err = json.Unmarshal(b, &arcs)
+	err := json.Unmarshal(b, &arcs)
 	if err != nil {
 		return nil, err
 	}

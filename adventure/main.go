@@ -14,7 +14,7 @@ func init() {
 
 func main() {
 	startHTTP()
-	state, err := loadStateJSON(*storyPath)
+	state, err := loadStateJSONFromFile(*storyPath)
 	if err != nil {
 		fmt.Printf("Unable to load story at: %s\n", *storyPath)
 		os.Exit(1)
