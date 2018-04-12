@@ -6,16 +6,18 @@
   </head>
   <body>
     <h1>{{.Title}}</h1>
-    <p>
       {{range .Story}}
-        {{.}}
+      <p>{{.}}</p>
       {{end}}
-    </p>
-    <p>What should the little gopher do?</p>
-    <ul>
-    {{range .Options}}
-    <li><a href="/{{$.CurrentArc}}/goto/{{.Arc}}">{{.Text}}</a></li>
+    {{if .Options}}
+      <p>What should the little gopher do?</p>
+      <ul>
+      {{range .Options}}
+      <li><a href="/{{$.CurrentArc}}/goto/{{.Arc}}">{{.Text}}</a></li>
+      {{end}}
+      </ul>
+    {{else}}
+      <a href="/">Start Over</a>
     {{end}}
-    </ul>
   </body>
 </html>

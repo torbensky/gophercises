@@ -45,37 +45,22 @@ func loadStateJSON(b []byte) (*StoryState, error) {
 }
 
 func (s *StoryState) setArc(arc string) error {
-	arcValid := false
-	for name := range s.Arcs {
-		if name == arc {
-			arcValid = true
-			break
-		}
+	if _, ok := s.Arcs[arc]; ok {
+		s.CurrentArc = arc
+		return nil
 	}
 
-	if !arcValid {
-		return errors.New("invalid story arc: '" + arc + "'")
-	}
-
-	s.CurrentArc = arc
-	return nil
+	return errors.New("invalid story arc: '" + arc + "'")
 }
 
 func (s *StoryState) followArc(arc string) error {
-	arcValid := false
-	for _, s := range s.getCurrentArc().Options {
-		if s.Arc == arc {
-			arcValid = true
-			break
+	for _, sa := range s.getCurrentArc().Options {
+		if sa.Arc == arc {
+			s.CurrentArc = arc
+			return nil
 		}
 	}
-	if !arcValid {
-		return errors.New("invalid story arc: '" + arc + "'")
-	}
-
-	s.CurrentArc = arc
-
-	return nil
+	return errors.New("invalid story arc: '" + arc + "'")
 }
 
 func (s *StoryState) getCurrentArc() StoryArc {
