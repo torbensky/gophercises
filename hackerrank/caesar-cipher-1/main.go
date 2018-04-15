@@ -8,12 +8,12 @@ import (
 func main() {
 	var n, k int
 	var s string
-	fmt.Scanf("%d", &n)
+	fmt.Scanln(&n) // Don't need
 	fmt.Scanln(&s)
 	fmt.Scanf("%d", &k)
 
 	var b bytes.Buffer
-	b.Grow(n)
+	b.Grow(len(s))
 	for _, c := range s {
 		b.WriteRune(cipherChar(c, k))
 	}
