@@ -44,7 +44,9 @@ func Execute() {
 
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(doCmd)
+	rootCmd.AddCommand(rmCmd)
 	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(completedCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

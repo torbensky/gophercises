@@ -8,10 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var doCmd = &cobra.Command{
-	Use:   "do",
-	Short: "Complete a task",
-	Long:  "Marks a task in the TODO list as completed at the current time.",
+var rmCmd = &cobra.Command{
+	Use:   "rm <TASK NUMBER>",
+	Short: "Removes a task",
+	Long:  "Permanently removes a task from the TODO list",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
 			return errors.New("one argument (task number) is required")
@@ -26,7 +26,7 @@ var doCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		num, _ := strconv.Atoi(args[0])
-		task, err := todos.CompleteTaskNum(num)
+		task, err := todos.RemoveTaskNum(num)
 		if err != nil {
 			fmt.Println(err)
 			return

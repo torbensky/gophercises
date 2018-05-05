@@ -2,7 +2,9 @@ package store
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/coreos/bolt"
 )
@@ -12,6 +14,7 @@ var TODOBucket = []byte("todos")
 
 // Contains information about a TODO list Task
 type Task struct {
+	CompletedAt time.Time
 	Description string
 }
 
@@ -19,7 +22,9 @@ type Task struct {
 type TodoService interface {
 	AddTask(*Task) error
 	RemoveTaskNum(int) (*Task, error)
-	ListTasks() []*Task
+	CompleteTaskNum(int) (*Task, error)
+	ListUncompleteTasks() []*Task
+	ListTasksCompletedAfter(t time.Time) []*Task
 	Close()
 }
 
@@ -55,53 +60,130 @@ func (s *boltStore) AddTask(t *Task) error {
 		if err != nil {
 			return err
 		}
-		return b.Put(itob(id), []byte(t.Description))
+		taskBytes, err := serializeTask(t)
+		if err != nil {
+			return err
+		}
+
+		return b.Put(itob(id), taskBytes)
 	})
 }
 
-// RemoveTaskNum removes the i'th Task from the current todo list
-func (s *boltStore) RemoveTaskNum(i int) (*Task, error) {
-	var t *Task
+// CompleteTaskNum removes the i'th Task from the current todo list
+func (s *boltStore) CompleteTaskNum(i int) (*Task, error) {
+	var task *Task
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(TODOBucket)
 
 		// Find the ith Task
 		c := b.Cursor()
-		var TaskId []byte
+		var taskId []byte
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			i--
 			if i == 0 {
 				// we are at the ith item
-				TaskId = k
-				t = &Task{
-					Description: string(v), // copies bytes
+				taskId = k
+				t, err := deserializeTask(v)
+				if err != nil {
+					return err
 				}
+				task = t
 				break
 			}
 		}
 
-		if TaskId == nil {
+		if taskId == nil {
+			return errors.New("invalid task number")
+		}
+
+		// Set completed
+		task.CompletedAt = time.Now()
+
+		// Save update to store
+		taskBytes, err := serializeTask(task)
+		if err != nil {
+			return err
+		}
+		return b.Put(taskId, taskBytes)
+	})
+
+	return task, err
+}
+
+// RemoveTaskNum removes the i'th Task from the current todo list
+func (s *boltStore) RemoveTaskNum(i int) (*Task, error) {
+	var task *Task
+	err := s.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(TODOBucket)
+
+		// Find the ith Task
+		c := b.Cursor()
+		var taskId []byte
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			i--
+			if i == 0 {
+				// we are at the ith item
+				taskId = k
+				t, err := deserializeTask(v)
+				if err != nil {
+					return err
+				}
+				task = t
+				break
+			}
+		}
+
+		if taskId == nil {
 			return errors.New("invalid task number")
 		}
 
 		// Delete it from store
-		return b.Delete(TaskId)
+		return b.Delete(taskId)
 	})
 
-	return t, err
+	return task, err
 }
 
-// ListTasks lists all the Tasks in the database
-func (s *boltStore) ListTasks() []*Task {
+// ListTasksCompletedAfter lists tasks that were completed after the specified time
+func (s *boltStore) ListTasksCompletedAfter(t time.Time) []*Task {
+	var tasks []*Task
+	// TODO: (ironic) maybe dont silently suppress this deserialization error. Out of date db probably...
+	s.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(TODOBucket)
+		if b != nil {
+			c := b.Cursor()
+			for k, v := c.First(); k != nil; k, v = c.Next() {
+				task, err := deserializeTask(v)
+				if err != nil {
+					return err
+				}
+				if !task.CompletedAt.IsZero() {
+					tasks = append(tasks, task)
+				}
+			}
+		}
+
+		return nil
+	})
+	return tasks
+}
+
+// ListUncompleteTasks lists all the Tasks in the database
+func (s *boltStore) ListUncompleteTasks() []*Task {
 	var tasks []*Task
 	s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(TODOBucket)
 		if b != nil {
 			c := b.Cursor()
 			for k, v := c.First(); k != nil; k, v = c.Next() {
-				tasks = append(tasks, &Task{
-					Description: string(v), // string() copies bytes
-				})
+				task, err := deserializeTask(v)
+				if err != nil {
+					return err
+				}
+				// Skip completed tasks
+				if task.CompletedAt.IsZero() {
+					tasks = append(tasks, task)
+				}
 			}
 		}
 
@@ -109,6 +191,19 @@ func (s *boltStore) ListTasks() []*Task {
 	})
 
 	return tasks
+}
+
+func deserializeTask(b []byte) (*Task, error) {
+	var t Task
+	err := json.Unmarshal(b, &t)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func serializeTask(t *Task) ([]byte, error) {
+	return json.Marshal(t)
 }
 
 // Close closes the underlying boltdb instance
