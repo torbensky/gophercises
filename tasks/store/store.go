@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 
-	"github.com/boltdb/bolt"
+	"github.com/coreos/bolt"
 )
 
 // TODOBucket is the name of the BoltDB bucket storing our todos
