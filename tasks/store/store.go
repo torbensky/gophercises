@@ -1,4 +1,4 @@
-package main
+package store
 
 import (
 	"encoding/binary"
@@ -17,10 +17,10 @@ type task struct {
 
 // The Generic API for TODO's
 type TodoService interface {
-	addTask(*task) error
-	removeTaskNum(int) (*task, error)
-	listTasks() []*task
-	close() error
+	AddTask(*task) error
+	RemoveTaskNum(int) (*task, error)
+	ListTasks() []*task
+	Close()
 }
 
 // boltStore is a boltdb based persistence store for todos
@@ -30,7 +30,7 @@ type boltStore struct {
 
 // newBolt constructs a new instance of the boltdb todo store implementation
 // dbFile is a path to the TODO task store (a boltdb file)
-func newBolt(dbFile string) (*boltStore, error) {
+func NewBolt(dbFile string) (TodoService, error) {
 	db, err := bolt.Open(dbFile, 0600, nil)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,8 @@ func newBolt(dbFile string) (*boltStore, error) {
 	}, nil
 }
 
-func (s *boltStore) addTask(t *task) error {
+// AddTask adds a task to the end of the current todo list
+func (s *boltStore) AddTask(t *task) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(TODOBucket)
 		id, err := b.NextSequence()
@@ -58,7 +59,8 @@ func (s *boltStore) addTask(t *task) error {
 	})
 }
 
-func (s *boltStore) removeTaskNum(i int) (*task, error) {
+// RemoveTaskNum removes the i'th task from the current todo list
+func (s *boltStore) RemoveTaskNum(i int) (*task, error) {
 	var t *task
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(TODOBucket)
@@ -89,8 +91,8 @@ func (s *boltStore) removeTaskNum(i int) (*task, error) {
 	return t, err
 }
 
-// listTasks lists all the tasks in the database
-func (s *boltStore) listTasks() []*task {
+// ListTasks lists all the tasks in the database
+func (s *boltStore) ListTasks() []*task {
 	var tasks []*task
 	s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(TODOBucket)
