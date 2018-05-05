@@ -10,16 +10,16 @@ import (
 // TODOBucket is the name of the BoltDB bucket storing our todos
 var TODOBucket = []byte("todos")
 
-// Contains information about a TODO list task
-type task struct {
+// Contains information about a TODO list Task
+type Task struct {
 	Description string
 }
 
 // The Generic API for TODO's
 type TodoService interface {
-	AddTask(*task) error
-	RemoveTaskNum(int) (*task, error)
-	ListTasks() []*task
+	AddTask(*Task) error
+	RemoveTaskNum(int) (*Task, error)
+	ListTasks() []*Task
 	Close()
 }
 
@@ -29,7 +29,7 @@ type boltStore struct {
 }
 
 // newBolt constructs a new instance of the boltdb todo store implementation
-// dbFile is a path to the TODO task store (a boltdb file)
+// dbFile is a path to the TODO Task store (a boltdb file)
 func NewBolt(dbFile string) (TodoService, error) {
 	db, err := bolt.Open(dbFile, 0600, nil)
 	if err != nil {
@@ -47,8 +47,8 @@ func NewBolt(dbFile string) (TodoService, error) {
 	}, nil
 }
 
-// AddTask adds a task to the end of the current todo list
-func (s *boltStore) AddTask(t *task) error {
+// AddTask adds a Task to the end of the current todo list
+func (s *boltStore) AddTask(t *Task) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(TODOBucket)
 		id, err := b.NextSequence()
@@ -59,47 +59,47 @@ func (s *boltStore) AddTask(t *task) error {
 	})
 }
 
-// RemoveTaskNum removes the i'th task from the current todo list
-func (s *boltStore) RemoveTaskNum(i int) (*task, error) {
-	var t *task
+// RemoveTaskNum removes the i'th Task from the current todo list
+func (s *boltStore) RemoveTaskNum(i int) (*Task, error) {
+	var t *Task
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(TODOBucket)
 
-		// Find the ith task
+		// Find the ith Task
 		c := b.Cursor()
-		var taskId []byte
+		var TaskId []byte
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			i--
 			if i == 0 {
 				// we are at the ith item
-				taskId = k
-				t = &task{
+				TaskId = k
+				t = &Task{
 					Description: string(v), // copies bytes
 				}
 				break
 			}
 		}
 
-		if taskId == nil {
+		if TaskId == nil {
 			return errors.New("invalid task number")
 		}
 
 		// Delete it from store
-		return b.Delete(taskId)
+		return b.Delete(TaskId)
 	})
 
 	return t, err
 }
 
-// ListTasks lists all the tasks in the database
-func (s *boltStore) ListTasks() []*task {
-	var tasks []*task
+// ListTasks lists all the Tasks in the database
+func (s *boltStore) ListTasks() []*Task {
+	var tasks []*Task
 	s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(TODOBucket)
 		if b != nil {
 			c := b.Cursor()
 			for k, v := c.First(); k != nil; k, v = c.Next() {
-				tasks = append(tasks, &task{
+				tasks = append(tasks, &Task{
 					Description: string(v), // string() copies bytes
 				})
 			}

@@ -12,26 +12,26 @@ import (
 
 func TestBoltStore(t *testing.T) {
 	tmpDbFile := tempFileName("taskstest", ".db")
-	b, err := newBolt(tmpDbFile)
+	b, err := NewBolt(tmpDbFile)
 	defer b.Close()
 	assert.NoError(t, err)
 
-	err = b.addTask(&task{
+	err = b.AddTask(&Task{
 		Description: "test 123",
 	})
 	assert.NoError(t, err)
 
-	tasks := b.listTasks()
+	tasks := b.ListTasks()
 	assert.Equal(t, 1, len(tasks))
 	assert.Equal(t, "test 123", tasks[0].Description)
 
 	// Remove the task we just added
-	tsk, err := b.removeTaskNum(1)
+	tsk, err := b.RemoveTaskNum(1)
 	assert.NoError(t, err)
 	assert.Equal(t, "test 123", tsk.Description)
 
 	// Try removing non-existent task - should error
-	tsk, err = b.removeTaskNum(1)
+	tsk, err = b.RemoveTaskNum(1)
 	assert.Error(t, err)
 	assert.Nil(t, tsk)
 }
