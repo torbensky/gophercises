@@ -8,6 +8,15 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/lib/pq"
+  packages = [
+    ".",
+    "oid"
+  ]
+  revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
+
+[[projects]]
   name = "github.com/magefile/mage"
   packages = [
     "mg",
@@ -32,6 +41,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "08ee48c7f34a826193388b7f26ce03a504eb7b02f6242bb4be2baef84886e44a"
+  inputs-digest = "455956871b2442d0b26a1da25ebf97d47b7573985fa53bb6f8c33571da1dc305"
   solver-name = "gps-cdcl"
   solver-version = 1
