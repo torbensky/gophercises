@@ -28,10 +28,19 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var number string
-	if err := db.QueryRow("SELECT * FROM phone_numbers").Scan(&number); err != nil {
+	rows, err := db.Query("SELECT number FROM phone_numbers")
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		fmt.Println("Got number: ", number)
+	}
+	fmt.Println("Phone numbers:")
+	for rows.Next() {
+		var number string
+		if err := rows.Scan(&number); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(number)
+	}
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
 	}
 }
