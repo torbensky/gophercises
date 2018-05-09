@@ -1,10 +1,11 @@
 DROP TABLE IF EXISTS phone_numbers;
 
 CREATE TABLE phone_numbers (
+    id SERIAL,
     number VARCHAR(40) NOT NULL
 );
 
-INSERT INTO phone_numbers VALUES
+INSERT INTO phone_numbers (number) VALUES
 ('1234567890'),
 ('123 456 7891'),
 ('(123) 456 7892'),
